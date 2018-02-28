@@ -1,23 +1,22 @@
 import multiprocessing
-import os
-from collections import defaultdict
 
 import h5py
 import numpy
 import numpy as np
 import pershombox
 
+from collections import defaultdict
 from .data_dir_reader import SciNe01DataDirReader
 from ..path_config import data_raw_path, data_generated_path
 from generation_code.generation.utils.gui import SimpleProgressCounter
 
 
-def height_filtration_from_top(f_first, f_second):
-    return max(-f_first, -f_second)
+def height_filtration_from_top(value):
+    return -value
 
 
-def heigt_filtration_from_bottom(f_first, f_second):
-    return max(f_first, f_second)
+def heigt_filtration_from_bottom(value):
+    return value
 
 
 def pershom_of_timeseries(timeseries, filtration):
@@ -29,9 +28,15 @@ def pershom_of_timeseries(timeseries, filtration):
     filt_values = []
 
     for i in range(len(timeseries) - 1):
+        #append vertex
+        toplices.append((i,))
+        filt_values.append(filtration(timeseries[i]))
+
         toplices.append((i, i + 1))
-        filt_value = filtration(timeseries[i], timeseries[i + 1])
-        filt_values.append(filt_value)
+        filt_values.append(max(filtration(x) for x in (timeseries[i], timeseries[i + 1])))
+
+    toplices.append((len(timeseries) - 1,))
+    filt_values.append(filtration(timeseries[len(timeseries) - 1]))
 
     return pershombox.toplex_persistence_diagrams(toplices=toplices,
                                                   filtration_values=filt_values,
@@ -59,13 +64,12 @@ def job_arg_iter(data_reader):
         x, y = data_reader[id]
         yield id, x, y
 
-# TODO use path_config
-EGG_DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'scitrecs_eeg_data/')
-OUTPUT_DIR = os.path.join(EGG_DATA_DIR, 'scitrecs_eeg_pershom_bottom_top_filtration.h5')
-
 
 def run():
-    data_reader = SciNe01DataDirReader(EGG_DATA_DIR, int_labels=True)
+    raw_data_dir = data_raw_path.joinpath('sciNe01_eeg')
+    output_dir = data_generated_path.joinpath('sciNe01_eeg_pershom_bottom_top_filtration.h5')
+
+    data_reader = SciNe01DataDirReader(raw_data_dir, int_labels=True)
 
     progress = SimpleProgressCounter(len(data_reader))
     progress.display()
@@ -73,7 +77,7 @@ def run():
 
     vlen_dtype = h5py.special_dtype(vlen=np.dtype('float32'))
 
-    with h5py.File(OUTPUT_DIR, 'w') as h5file:
+    with h5py.File(output_dir, 'w') as h5file:
 
         grp_data = h5file.create_group('data')
         ds_labels = h5file.create_dataset('labels',
