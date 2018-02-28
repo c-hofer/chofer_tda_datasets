@@ -8,7 +8,7 @@ import pershombox
 from collections import defaultdict
 from .data_dir_reader import SciNe01DataDirReader
 from ..path_config import data_raw_path, data_generated_path
-from generation_code.generation.utils.gui import SimpleProgressCounter
+from ..utils.gui import SimpleProgressCounter
 
 
 def height_filtration_from_top(value):
@@ -50,8 +50,8 @@ def job(args):
         signal = data[:, i_sensor]
         signal = (signal - signal.mean()) / signal.std()
 
-        dgms['filt_height_from_top'].append(pershom_of_timeseries(signal, height_filtration_from_top)[0])
-        dgms['filt_height_from_bottom'].append(pershom_of_timeseries(signal, heigt_filtration_from_bottom)[0])
+        dgms['top'].append(pershom_of_timeseries(signal, height_filtration_from_top)[0])
+        dgms['bottom'].append(pershom_of_timeseries(signal, heigt_filtration_from_bottom)[0])
 
     return {'id': id,
             'dgms': dgms,
@@ -65,6 +65,8 @@ def job_arg_iter(data_reader):
         yield id, x, y
 
 
+#TODO add meta info strings
+#TODO add group information
 def run():
     raw_data_dir = data_raw_path.joinpath('sciNe01_eeg')
     output_dir = data_generated_path.joinpath('sciNe01_eeg_pershom_bottom_top_filtration.h5')
@@ -75,35 +77,39 @@ def run():
     progress.display()
     n_cores = min(multiprocessing.cpu_count() - 1, 10)
 
-    vlen_dtype = h5py.special_dtype(vlen=np.dtype('float32'))
-
     with h5py.File(output_dir, 'w') as h5file:
 
         grp_data = h5file.create_group('data')
-        ds_labels = h5file.create_dataset('labels',
+        ds_target = h5file.create_dataset('target',
                                           dtype='i8',
                                           shape=(len(data_reader),))
 
         with multiprocessing.Pool(n_cores) as p:
+
+
+            i = 0 #TODO remove
+
 
             for ret_val in p.imap_unordered(job, job_arg_iter(data_reader)):
                 id = ret_val['id']
                 dgms = ret_val['dgms']
                 label = ret_val['label']
 
-                ds_labels[id] = label
+                ds_target[id] = label
                 grp_id = grp_data.create_group(str(id))
 
                 for filt_name, dgm_list in dgms.items():
-                    ds_id_filt = grp_id.create_dataset(filt_name,
-                                                       shape=(len(dgm_list), 2),
-                                                       dtype=vlen_dtype)
+                    grp_id_filt = grp_id.create_group(filt_name)
 
                     for i_sensor, dgm in enumerate(dgm_list):
-                        ds_id_filt[i_sensor, 0] = [x[0] for x in dgm]
-                        ds_id_filt[i_sensor, 1] = [x[1] for x in dgm]
+                        dgm = np.array(dgm, dtype=np.float32)
+                        grp_id_filt.create_dataset(str(i_sensor), data=dgm)
 
                 progress.trigger_progress()
+
+                i += 1 #TODO remove
+                if i == 20: #TODO remove
+                    break #TODO remove
 
 
 if __name__ == "__main__":
