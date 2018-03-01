@@ -5,8 +5,10 @@ import os
 from collections import namedtuple
 
 GROUP_IDS = ['control', 'patient']
+STR_TO_INT_GROUP_DICT = {str_label: i for i, str_label in enumerate(GROUP_IDS)}
+
 LABEL_IDS = ['IFOT', 'IHND', 'MFOT', 'MHND', 'OFOT', 'OHND', 'REST']
-STR_TO_INT_LABLES_DICT = {str_label: i for i, str_label in enumerate(LABEL_IDS)}
+STR_TO_INT_LABELS_DICT = {str_label: i for i, str_label in enumerate(LABEL_IDS)}
 SENSOR_CONFIGURATIONS = \
     {
         # x-1 as original sensor counting started with 1 (not with 0)
@@ -26,8 +28,12 @@ SENSOR_CONFIGURATIONS = \
     }
 
 
+def int_group_to_str_group(group: str):
+    return STR_TO_INT_GROUP_DICT[group]
+
+
 def _int_label_from_str_label(label: str):
-    return STR_TO_INT_LABLES_DICT[label]
+    return STR_TO_INT_LABELS_DICT[label]
 
 
 def down_sample_from_1000_to_250_timestamps(data):
@@ -41,60 +47,60 @@ class SciNe01DataDirReader:
     group_ids = GROUP_IDS
     label_ids = LABEL_IDS
 
-    sample_def = namedtuple('sample_def', ('file_path', 'label', 'run', 'sub_run'))
+    sample_def = namedtuple('sample_def', ('file_path', 'subject_id', 'label', 'group', 'run', 'sub_run'))
 
     def __init__(self, data_dir: str,
                  omit_sub_run_0=True,
-                 int_labels=True,
                  down_sample_higher_resolution_samples=True):
         self.down_sample_higher_resolution_samples = down_sample_higher_resolution_samples
-        self.int_labels = bool(int_labels)
         self.data_dir = str(data_dir)
         assert os.path.isdir(self.data_dir)
         self.omit_sub_run_0 = omit_sub_run_0
 
         self._sample_defs = self._init_list_of_sample_defs()
 
-    def _sorted_list_file_paths(self):
-        file_paths = glob.glob(os.path.join(self.data_dir, '*.mat'))
-        file_paths = [os.path.normpath(p) for p in file_paths]
-        sorted(file_paths, key=lambda x: self._meta_info_from_file_name(x)['id'])
-        return file_paths
-
     def _init_list_of_sample_defs(self):
         list_of_sample_defs = []
-        file_paths = self._sorted_list_file_paths()
 
-        for p in file_paths:
-            for l in self.label_ids:
+        file_paths_metas = glob.glob(os.path.join(self.data_dir, '*.mat'))
+        file_paths_metas = [(os.path.normpath(p),
+                       self._meta_info_from_file_path(p)) for p in file_paths_metas]
+        sorted(file_paths_metas, key=lambda x: x[1]['subject_id'])
 
+        for path, meta in file_paths_metas:
+
+            subject_id = meta['subject_id']
+            group = meta['group']
+
+            # one subject has many runs with different labels ...
+            for label in self.label_ids:
+
+                # ... one subject has per label 25 runs ...
                 for run in range(25):
+
+                    # ... divided into 6 sub-runs
                     for sub_run in range(6):
                         if self.omit_sub_run_0 and sub_run == 0:
                             continue
 
-                        list_of_sample_defs.append(self.sample_def(p, l, run, sub_run))
+                        list_of_sample_defs.append(self.sample_def(path, subject_id, label, group, run, sub_run))
 
         return list_of_sample_defs
 
-    def _meta_info_from_file_name(self, file_name: str):
+    def _meta_info_from_file_path(self, file_name: str):
         name = os.path.basename(file_name)
         meta = {}
 
         for g_id in self.group_ids:
             if g_id in name:
                 meta['group'] = g_id
-                meta['id'] = name.split('.mat')[0]
+                meta['subject_id'] = name.split('.mat')[0]
 
         return meta
 
     @property
     def labels(self):
         labels = [self._sample_defs[i].label for i in range(len(self))]
-
-        if self.int_labels:
-            labels = [_int_label_from_str_label(l) for l in labels]
-
         return labels
 
     def __len__(self):
@@ -113,13 +119,18 @@ class SciNe01DataDirReader:
         sub_run_length = int(n_time_stamps / 6)
         s = slice(sub_run_length * sample_def.sub_run, sub_run_length * (sample_def.sub_run + 1))
 
-        x, y = data[s, :], sample_def.label
+        x = data[s, :]
+
+        meta = {
+            'subject_id': sample_def.subject_id,
+            'group': sample_def.group,
+            'label': sample_def.label,
+            'run': sample_def.run,
+            'sub_run': sample_def.sub_run
+            }
 
         assert x.shape[0] == 250 or x.shape[0] == 1000
         if self.down_sample_higher_resolution_samples and x.shape[0] == 1000:
             x = down_sample_from_1000_to_250_timestamps(x)
 
-        if self.int_labels:
-            y = _int_label_from_str_label(y)
-
-        return x, y
+        return x, meta
