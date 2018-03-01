@@ -4,8 +4,10 @@ import glob
 import os
 from collections import namedtuple
 
+
 GROUP_IDS = ['control', 'patient']
 STR_TO_INT_GROUP_DICT = {str_label: i for i, str_label in enumerate(GROUP_IDS)}
+
 
 LABEL_IDS = ['IFOT', 'IHND', 'MFOT', 'MHND', 'OFOT', 'OHND', 'REST']
 STR_TO_INT_LABELS_DICT = {str_label: i for i, str_label in enumerate(LABEL_IDS)}
@@ -28,12 +30,24 @@ SENSOR_CONFIGURATIONS = \
     }
 
 
-def int_group_to_str_group(group: str):
+def int_group_from_str_group(group: str):
+    assert isinstance(group, str)
     return STR_TO_INT_GROUP_DICT[group]
 
 
-def _int_label_from_str_label(label: str):
+def str_group_from_int_group(group: int):
+    assert isinstance(group, int)
+    return GROUP_IDS[group]
+
+
+def int_label_from_str_label(label: str):
+    assert isinstance(label, str)
     return STR_TO_INT_LABELS_DICT[label]
+
+
+def str_label_from_int_label(label: int):
+    assert isinstance(label, int)
+    return LABEL_IDS[label]
 
 
 def down_sample_from_1000_to_250_timestamps(data):
