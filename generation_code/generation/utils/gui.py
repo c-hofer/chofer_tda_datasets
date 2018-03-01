@@ -22,7 +22,7 @@ class SimpleProgressCounter:
 
             self._displayed_once = True
 
-        print(self._suffix + self.value, end='\r                           ')
+        print(self._suffix + self.value + '               ', end='\r')
         sys.stdout.flush()
 
     def trigger_progress(self):
