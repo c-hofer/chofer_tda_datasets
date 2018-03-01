@@ -94,7 +94,7 @@ def job(args):
     return ret_val
 
 
-def run():
+def run(max_cpu=10):
     raw_data_dir = data_raw_path.joinpath('anon_eigenvalue_predict')
     output_path = data_generated_path.joinpath('anon_eigenvalue_predict_pershom_degree_filtration.h5')
 
@@ -102,7 +102,7 @@ def run():
 
     progress = SimpleProgressCounter(len(job_args))
     progress.display()
-    n_cores = min(multiprocessing.cpu_count() - 1, 10)
+    n_cores = min(multiprocessing.cpu_count() - 1, max_cpu)
 
     with h5py.File(output_path, 'w') as h5file:
 
