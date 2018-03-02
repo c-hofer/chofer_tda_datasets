@@ -71,6 +71,10 @@ def job_arg_iter(data_reader):
         yield index, x, meta
 
 
+read_me_txt = \
+"""'data': access <index>/<filtration>/<sensor> \n'target': target[i] = label of 'data'[i]"""
+
+
 def run():
     raw_data_dir = data_raw_path.joinpath('sciNe01_eeg')
     output_dir = data_generated_path.joinpath('sciNe01_eeg_pershom_bottom_top_filtration.h5')
@@ -112,13 +116,7 @@ def run():
         for g_int, g_str in enumerate(GROUP_IDS):
             ds_int_to_str_group[g_int] = g_str
 
-        ds_read_me = h5file.create_dataset('readme', (1,), dtype=h5py.special_dtype(vlen=str))
-        read_me_txt = \
-            """
-            Order of access in 'data' dataset is
-                <index>/<filtration>/<sensor>
-            """
-        ds_read_me[0] = read_me_txt
+        h5file.attrs['readme'] = read_me_txt
 
         with multiprocessing.Pool(n_cores) as p:
 
