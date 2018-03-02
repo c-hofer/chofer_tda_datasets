@@ -84,5 +84,10 @@ class Hdf5SupervisedDatasetOneFile(SupervisedDataset):
     def targets(self):
         return self._ds_target.value
 
+    @property
+    def readme(self):
+        if 'readme' in self._h5py_file.attrs:
+            return self._h5py_file.attrs['readme']
+
     def __del__(self):
         self._h5py_file.close()
