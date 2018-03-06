@@ -13,6 +13,7 @@ from .data_dir_reader import SciNe01DataDirReader, \
     GROUP_IDS
 from ..path_config import data_raw_path, data_generated_path
 from ..utils.gui import SimpleProgressCounter
+from .data_dir_reader import SENSOR_CONFIGURATIONS
 
 
 def height_filtration_from_top(value):
@@ -103,6 +104,10 @@ def run():
         ds_sub_run = h5file.create_dataset('sub_run',
                                            dtype='i8',
                                            shape=(len(data_reader),))
+
+        grp_sensor_cfg = h5file.create_group('sensor_configurations')
+        for k, v in SENSOR_CONFIGURATIONS.items():
+            grp_sensor_cfg.create_dataset(k, data=v, dtype='i8')
 
         ds_int_to_str_label = h5file.create_dataset('label_int_2_str',
                                                   (len(LABEL_IDS),),
