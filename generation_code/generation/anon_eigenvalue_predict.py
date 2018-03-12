@@ -86,8 +86,8 @@ def job(args):
     dgms_by_dim = toplex_persistence_diagrams(list_of_toplices, filtration_values, deessentialize=False)
 
     dim_0 = [(b, d) for b, d in dgms_by_dim[0] if d != float('inf')]
-    dim_0_ess = [(b, d) for b, d in dgms_by_dim[0] if d == float('inf')]
-    dim_1_ess = [(b, d) for b, d in dgms_by_dim[1] if d == float('inf')]
+    dim_0_ess = [b for b, d in dgms_by_dim[0] if d == float('inf')]
+    dim_1_ess = [b for b, d in dgms_by_dim[1] if d == float('inf')]
 
     ret_val = {'graph_index': graph_index,
                'graph_id': graph_id,
