@@ -83,12 +83,17 @@ def job(args):
 
     list_of_toplices = vertices + edges
     filtration_values = [degree_filtration(s, vertex_degree_list) for s in list_of_toplices]
-    dgms_by_dim = toplex_persistence_diagrams(list_of_toplices, filtration_values, deessentialize=True)
+    dgms_by_dim = toplex_persistence_diagrams(list_of_toplices, filtration_values, deessentialize=False)
+
+    dim_0 = [(b, d) for b, d in dgms_by_dim[0] if d != float('inf')]
+    dim_0_ess = [(b, d) for b, d in dgms_by_dim[0] if d == float('inf')]
+    dim_1_ess = [(b, d) for b, d in dgms_by_dim[1] if d == float('inf')]
 
     ret_val = {'graph_index': graph_index,
                'graph_id': graph_id,
-               'barcodes_dim_0': np.array(dgms_by_dim[0]),
-               'birth_times_dim_1': np.array(dgms_by_dim[1])[:, 0],
+               'dim_0': np.array(dim_0),
+               'dim_0_ess': np.array(dim_0_ess),
+               'dim_1_ess': np.array(dim_1_ess),
                'eigenvalues': eigenvalues}
 
     return ret_val
@@ -126,14 +131,16 @@ def run(max_cpu=10):
             for ret_val in p.imap_unordered(job, job_args):
                 index = ret_val['graph_index']
                 graph_id = ret_val['graph_id']
-                barcodes_dim_0 = ret_val['barcodes_dim_0']
-                birth_times_dim_1 = ret_val['birth_times_dim_1']
+                dim_0 = ret_val['dim_0']
+                dim_0_ess = ret_val['dim_0_ess']
+                dim_1_ess = ret_val['dim_1_ess']
                 eigenvalues = ret_val['eigenvalues']
 
                 grp_index = grp_data.create_group(str(index))
 
-                grp_index.create_dataset('dim_0', data=barcodes_dim_0)
-                grp_index.create_dataset('dim_1', data=birth_times_dim_1)
+                grp_index.create_dataset('dim_0', data=dim_0)
+                grp_index.create_dataset('dim_0_ess', data=dim_0_ess)
+                grp_index.create_dataset('dim_1_ess', data=dim_1_ess)
 
                 ds_target[index] = eigenvalues
                 ds_index_to_id[index] = graph_id
