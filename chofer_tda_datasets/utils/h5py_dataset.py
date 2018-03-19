@@ -63,26 +63,28 @@ class Hdf5SupervisedDatasetOneFile(SupervisedDataset):
         super().__init__(data_transforms=data_transforms,
                          target_transforms=target_transforms)
 
-        file_path = Path(data_root_folder_path).joinpath(self.file_name)
-        self._h5py_file = h5py.File(file_path, 'r')
+        self.file_path = Path(data_root_folder_path).joinpath(self.file_name)
+        self.__h5py_file = None
 
-        self._grp_data = self._h5py_file[self.data_hdf5_key]
-        self._ds_target = self._h5py_file[self.target_hdf5_key]
+    @property
+    def _h5py_file(self):
+        if self.__h5py_file is None:
+            self.__h5py_file = h5py.File(self.file_path, 'r')
 
-        self._length = len(self._grp_data.keys())
+        return self.__h5py_file
 
     def _get_data_i(self, index: int):
-        return self._grp_data[str(index)]
+        return self._h5py_file[self.data_hdf5_key][str(index)]
 
     def _get_target_i(self, index: int):
-        return self._ds_target[index]
+        return self._h5py_file[self.target_hdf5_key].value[index]
 
     def __len__(self):
-        return self._length
+        return len(self._h5py_file[self.data_hdf5_key].keys())
 
     @property
     def targets(self):
-        return self._ds_target.value
+        return self._h5py_file[self.target_hdf5_key].value
 
     @property
     def readme(self):
@@ -90,4 +92,9 @@ class Hdf5SupervisedDatasetOneFile(SupervisedDataset):
             return self._h5py_file.attrs['readme']
 
     def __del__(self):
-        self._h5py_file.close()
+        if self.__h5py_file is not None:
+            self.__h5py_file.close()
+
+    def __getstate__(self):
+        self.__h5py_file = None
+        return self.__dict__.copy()
