@@ -77,7 +77,7 @@ class Hdf5SupervisedDatasetOneFile(SupervisedDataset):
         return self._h5py_file[self.data_hdf5_key][str(index)]
 
     def _get_target_i(self, index: int):
-        return self._h5py_file[self.target_hdf5_key].value[index]
+        return self._h5py_file[self.target_hdf5_key][index]
 
     def __len__(self):
         return len(self._h5py_file[self.data_hdf5_key].keys())
