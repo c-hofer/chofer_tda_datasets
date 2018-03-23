@@ -272,7 +272,7 @@ class DataSetBase:
     def __init__(self, root_dir: str, download=True, sample_transforms: list=None):
         sample_transforms = [] if sample_transforms is None else sample_transforms
         self.root_dir = pth.normpath(root_dir)
-        self.sample_transforms = sample_transforms
+        self.data_transforms = sample_transforms
         self._provider = None
         self.integer_labels = True
 
@@ -307,7 +307,7 @@ class DataSetBase:
     def __getitem__(self, item):
         x, y = self._provider[item]
 
-        for t in self.sample_transforms:
+        for t in self.data_transforms:
             x = t(x)
 
         if self.integer_labels:

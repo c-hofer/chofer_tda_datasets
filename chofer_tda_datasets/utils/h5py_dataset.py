@@ -1,5 +1,4 @@
 import h5py
-import multiprocessing
 from pathlib import Path
 
 
@@ -65,12 +64,6 @@ class Hdf5SupervisedDatasetOneFile(SupervisedDataset):
                          target_transforms=target_transforms)
 
         self.file_path = Path(data_root_folder_path).joinpath(self.file_name)
-        # self._h5py_file = h5py.File(file_path, 'r')
-
-        # self.__grp_data = self._h5py_file[self.data_hdf5_key]
-        # self.__ds_target = self._h5py_file[self.target_hdf5_key]
-
-        self._length = len(self._grp_data.keys())
 
     @property
     def _h5py_file(self):
@@ -85,22 +78,19 @@ class Hdf5SupervisedDatasetOneFile(SupervisedDataset):
         return self._h5py_file[self.target_hdf5_key]
 
     def _get_data_i(self, index: int):
-        return self._grp_data[str(index)]
+        return self._h5py_file[self.data_hdf5_key][str(index)]
 
     def _get_target_i(self, index: int):
-        return self._ds_target[index]
+        return self._h5py_file[self.target_hdf5_key][index]
 
     def __len__(self):
-        return self._length
+        return len(self._h5py_file[self.data_hdf5_key].keys())
 
     @property
     def targets(self):
-        return self._ds_target.value
+        return self._h5py_file[self.target_hdf5_key].value
 
     @property
     def readme(self):
         if 'readme' in self._h5py_file.attrs:
             return self._h5py_file.attrs['readme']
-
-    def __del__(self):
-        self._h5py_file.close()
