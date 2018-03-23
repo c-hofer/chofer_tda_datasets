@@ -1,4 +1,5 @@
 import h5py
+import multiprocessing
 from pathlib import Path
 
 
@@ -63,13 +64,25 @@ class Hdf5SupervisedDatasetOneFile(SupervisedDataset):
         super().__init__(data_transforms=data_transforms,
                          target_transforms=target_transforms)
 
-        file_path = Path(data_root_folder_path).joinpath(self.file_name)
-        self._h5py_file = h5py.File(file_path, 'r')
+        self.file_path = Path(data_root_folder_path).joinpath(self.file_name)
+        # self._h5py_file = h5py.File(file_path, 'r')
 
-        self._grp_data = self._h5py_file[self.data_hdf5_key]
-        self._ds_target = self._h5py_file[self.target_hdf5_key]
+        # self.__grp_data = self._h5py_file[self.data_hdf5_key]
+        # self.__ds_target = self._h5py_file[self.target_hdf5_key]
 
         self._length = len(self._grp_data.keys())
+
+    @property
+    def _h5py_file(self):
+        return h5py.File(self.file_path, 'r')
+
+    @property
+    def _grp_data(self):
+        return self._h5py_file[self.data_hdf5_key]
+
+    @property
+    def _ds_target(self):
+        return self._h5py_file[self.target_hdf5_key]
 
     def _get_data_i(self, index: int):
         return self._grp_data[str(index)]
