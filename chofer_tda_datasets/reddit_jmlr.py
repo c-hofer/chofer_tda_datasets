@@ -5,5 +5,5 @@ class Reddit5kJmlr(Hdf5SupervisedDatasetOneFile):
     file_name = 'reddit_5k_jmlr.h5'
 
 
-class Reddit5kJmlr(Hdf5SupervisedDatasetOneFile):
+class Reddit12kJmlr(Hdf5SupervisedDatasetOneFile):
     file_name = 'reddit_12k_jmlr.h5'
