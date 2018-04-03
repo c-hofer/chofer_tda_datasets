@@ -1,9 +1,10 @@
 import multiprocessing
+
 import h5py
 import numpy as np
-
-from collections import defaultdict
 from pershombox import toplex_persistence_diagrams
+
+from .utils.graph import read_graph_from_metis_file
 from .path_config import data_raw_path, data_generated_path
 from .utils.gui import SimpleProgressCounter
 
@@ -31,43 +32,6 @@ def job_args_list(raw_data_dir):
     return job_args
 
 
-def read_graph_from_file(file_path):
-    edges = set()
-    vertices = []
-    degree = defaultdict(int)
-
-    with open(file_path, 'r') as f:
-        header = f.readline()[:-1]
-        n_vertices, n_edges = (int(x) for x in header.split(' '))
-        for node_id, line in enumerate(f):
-            # remove \n at end of line
-            line = line[:-1]
-            neighbor_ids = line.split(' ')
-            neighbor_ids = [int(s) for s in neighbor_ids]
-
-            for neig_id in neighbor_ids:
-
-                edge = [node_id, neig_id]
-                edge = sorted(edge)
-                edge = tuple(edge)
-
-                len_before_add = len(edges)
-                edges.add(edge)
-
-                if len_before_add + 1 == len(edges):
-                    degree[edge[0]] += 1
-                    degree[edge[1]] += 1
-
-            vertices.append((node_id,))
-
-        assert len(vertices) == n_vertices
-        assert len(edges) == n_edges
-
-    degree = [degree[i] for i in range(len(degree))]
-
-    return vertices, list(edges), degree
-
-
 def degree_filtration(simplex, vertex_degree_list):
     return max(vertex_degree_list[vertex_id] for vertex_id in simplex)
 
@@ -78,7 +42,7 @@ def job(args):
     graph_file_path = args['graph_file_path']
     ev_file_path = args['ev_file_path']
 
-    vertices, edges, vertex_degree_list = read_graph_from_file(graph_file_path)
+    vertices, edges, vertex_degree_list = read_graph_from_metis_file(graph_file_path)
     eigenvalues = np.loadtxt(ev_file_path)
 
     list_of_toplices = vertices + edges
