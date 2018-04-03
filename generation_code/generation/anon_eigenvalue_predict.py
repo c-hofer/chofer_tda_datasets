@@ -9,12 +9,12 @@ from .path_config import data_raw_path, data_generated_path
 from .utils.gui import SimpleProgressCounter
 
 
-def job_args_list(raw_data_dir):
-    def get_graph_id_from_path(path):
-        return int(path.name.split('-')[0])
-
-    gr_files = sorted(raw_data_dir.glob('*.metis'))
-    ev_files = sorted(raw_data_dir.glob('*.eigenvalues'))
+def job_args_list(raw_data_dir,
+                  get_graph_id_from_path,
+                  graph_file_extension='metis',
+                  eigenvalue_file_extension='eigenvalues'):
+    gr_files = sorted(raw_data_dir.glob('*.' + graph_file_extension))
+    ev_files = sorted(raw_data_dir.glob('*.' + eigenvalue_file_extension))
     assert len(gr_files) == len(ev_files)
     file_paths = list(zip(gr_files, ev_files))
 
@@ -63,11 +63,20 @@ def job(args):
     return ret_val
 
 
-def run(max_cpu=10):
-    raw_data_dir = data_raw_path.joinpath('anon_eigenvalue_predict')
-    output_path = data_generated_path.joinpath('anon_eigenvalue_predict_pershom_degree_filtration.h5')
+def run(raw_data_dir_name,
+        get_graph_id_from_path,
+        graph_file_extension,
+        eigenvalue_file_extension,
+        output_file_name,
+        read_me_txt="",
+        max_cpu=10):
+    raw_data_dir = data_raw_path.joinpath(raw_data_dir_name)
+    output_path = data_generated_path.joinpath(output_file_name)
 
-    job_args = job_args_list(raw_data_dir)
+    job_args = job_args_list(raw_data_dir,
+                             get_graph_id_from_path=get_graph_id_from_path,
+                             graph_file_extension=graph_file_extension,
+                             eigenvalue_file_extension=eigenvalue_file_extension)
 
     progress = SimpleProgressCounter(len(job_args))
     progress.display()
@@ -85,9 +94,7 @@ def run(max_cpu=10):
                                                shape=(len(job_args),))
 
         ds_read_me = h5file.create_dataset('readme', (1,), dtype=h5py.special_dtype(vlen=str))
-        read_me_txt = \
-            """            
-            """
+
         ds_read_me[0] = read_me_txt
 
         with multiprocessing.Pool(n_cores) as p:
