@@ -6,4 +6,4 @@ class Anon10kEigenvaluePredict(Hdf5SupervisedDatasetOneFile):
 
 
 class Anon1kEigenvaluePredict(Hdf5SupervisedDatasetOneFile):
-    file_name = 'anon_1k_eigenvalue_predict_small_pershom_degree_filtration.h5'
+    file_name = 'anon_1k_eigenvalue_predict_pershom_degree_filtration.h5'
