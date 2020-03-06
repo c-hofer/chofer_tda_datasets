@@ -43,7 +43,7 @@ class SupervisedDataset(object):
 
 def hdf5_group_to_dict(hdf5_group):
         if isinstance(hdf5_group, h5py.Dataset):
-            return hdf5_group.value
+            return hdf5_group[()]
         else:
             return {k: hdf5_group_to_dict(v) for k, v in hdf5_group.items()}
 
@@ -88,7 +88,7 @@ class Hdf5SupervisedDatasetOneFile(SupervisedDataset):
 
     @property
     def targets(self):
-        return self._h5py_file[self.target_hdf5_key].value
+        return self._h5py_file[self.target_hdf5_key][()]
 
     @property
     def readme(self):
